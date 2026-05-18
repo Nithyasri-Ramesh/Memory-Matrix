@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FLUX PAIRS: MEMORY MATRIX</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080b14;
+    --surface: rgba(10,18,35,0.85);
+    --surface2: rgba(15,25,50,0.7);
+    --p1: #00f5ff;
+    --p2: #ff2d78;
+    --p1-dim: rgba(0,245,255,0.15);
+    --p2-dim: rgba(255,45,120,0.15);
+    --text: #c8deff;
+    --text-dim: #4a6080;
+    --card-back: #0d1929;
+    --card-border: #1a2a4a;
+    --gold: #ffd700;
+    --grid-size: 4;
+    --card-gap: 6px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(0,245,255,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 90%, rgba(255,45,120,0.05) 0%, transparent 60%),
+      repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(0,245,255,0.015) 40px, rgba(0,245,255,0.015) 41px),
+      repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(0,245,255,0.015) 40px, rgba(0,245,255,0.015) 41px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ============ HEADER ============ */
+  .header {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 24px 20px 10px;
+  }
+  .header h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(1.2rem, 4vw, 2.2rem);
+    font-weight: 900;
+    letter-spacing: 0.15em;
+    color: var(--p1);
+    text-shadow: 0 0 20px var(--p1), 0 0 40px rgba(0,245,255,0.4);
+    line-height: 1.1;
+  }
+  .header h1 span { color: var(--p2); text-shadow: 0 0 20px var(--p2), 0 0 40px rgba(255,45,120,0.4); }
+  .header p {
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    color: var(--text-dim);
+    margin-top: 4px;
+    text-transform: uppercase;
+  }
+
+  /* ============ SETUP SCREEN ============ */
+  #setup-screen {
+    position: relative;
+    z-index: 1;
+    width: min(540px, 95vw);
+    margin: 16px auto;
+    background: var(--surface);
+    border: 1px solid rgba(0,245,255,0.12);
+    border-radius: 16px;
+    padding: 24px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 0 40px rgba(0,245,255,0.06), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  .setup-section { margin-bottom: 20px; }
+  .setup-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.25em;
+    color: var(--p1);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .setup-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(0,245,255,0.3), transparent);
+  }
+
+  .pill-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .pill {
+    flex: 1;
+    min-width: 70px;
+    padding: 8px 10px;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    background: var(--card-back);
+    color: var(--text-dim);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    user-select: none;
+  }
+  .pill:hover { border-color: rgba(0,245,255,0.4); color: var(--text); }
+  .pill.active-p1 {
+    border-color: var(--p1);
+    background: var(--p1-dim);
+    color: var(--p1);
+    box-shadow: 0 0 12px rgba(0,245,255,0.2);
+  }
+  .pill.active-p2 {
+    border-color: var(--p2);
+    background: var(--p2-dim);
+    color: var(--p2);
+    box-shadow: 0 0 12px rgba(255,45,120,0.2);
+  }
+
+  .grid-preview {
+    margin-top: 12px;
+    text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+  }
+  .grid-preview strong {
+    color: var(--gold);
+    text-shadow: 0 0 10px rgba(255,215,0,0.4);
+  }
+
+  #start-btn {
+    width: 100%;
+    padding: 14px;
+    margin-top: 4px;
+    background: linear-gradient(135deg, rgba(0,245,255,0.15), rgba(0,245,255,0.05));
+    border: 1px solid var(--p1);
+    border-radius: 10px;
+    color: var(--p1);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    transition: all 0.25s;
+    text-shadow: 0 0 10px var(--p1);
+    box-shadow: 0 0 20px rgba(0,245,255,0.1);
+  }
+  #start-btn:hover {
+    background: linear-gradient(135deg, rgba(0,245,255,0.25), rgba(0,245,255,0.1));
+    box-shadow: 0 0 30px rgba(0,245,255,0.25);
+    transform: translateY(-1px);
+  }
+
+  /* ============ GAME SCREEN ============ */
+  #game-screen {
+    display: none;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 10px 20px;
+  }
+  #game-screen.active { display: flex; }
+
+  /* ============ SCOREBOARD ============ */
+  .scoreboard {
+    display: flex;
+    gap: 10px;
+    width: min(85vw, 65vh);
+    max-width: 560px;
+    margin-bottom: 10px;
+  }
+  .player-card {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.4s;
+    position: relative;
+    overflow: hidden;
+  }
+  .player-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .player-card.p1-card::before { background: var(--p1-dim); }
+  .player-card.p2-card::before { background: var(--p2-dim); }
+  .player-card.active-turn {
+    border-color: var(--active-color, var(--p1));
+    box-shadow: 0 0 20px rgba(var(--active-rgb, 0,245,255), 0.3), inset 0 0 20px rgba(var(--active-rgb, 0,245,255), 0.05);
+    animation: breathe 2s ease-in-out infinite;
+  }
+  .player-card.active-turn::before { opacity: 1; }
+  .player-card.p1-card { --active-color: var(--p1); --active-rgb: 0,245,255; }
+  .player-card.p2-card { --active-color: var(--p2); --active-rgb: 255,45,120; }
+
+  @keyframes breathe {
+    0%, 100% { box-shadow: 0 0 15px rgba(var(--active-rgb), 0.2); }
+    50% { box-shadow: 0 0 30px rgba(var(--active-rgb), 0.5), 0 0 50px rgba(var(--active-rgb), 0.15); }
+  }
+
+  .player-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+  .p1-card .player-avatar { background: var(--p1-dim); border: 1px solid var(--p1); }
+  .p2-card .player-avatar { background: var(--p2-dim); border: 1px solid var(--p2); }
+
+  .player-info { position: relative; z-index: 1; flex: 1; min-width: 0; }
+  .player-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .p1-card .player-name { color: var(--p1); }
+  .p2-card .player-name { color: var(--p2); }
+  .player-score {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+  .p1-card .player-score { color: var(--p1); text-shadow: 0 0 15px var(--p1); }
+  .p2-card .player-score { color: var(--p2); text-shadow: 0 0 15px var(--p2); }
+  .player-sub {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  .turn-indicator {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    opacity: 0;
+    z-index: 1;
+  }
+  .p1-card .turn-indicator { background: var(--p1); box-shadow: 0 0 8px var(--p1); }
+  .p2-card .turn-indicator { background: var(--p2); box-shadow: 0 0 8px var(--p2); }
+  .active-turn .turn-indicator { opacity: 1; animation: blink 1s step-end infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* game info bar */
+  .game-info-bar {
+    display: flex;
+    gap: 10px;
+    width: min(85vw, 65vh);
+    max-width: 560px;
+    margin-bottom: 10px;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .info-chip {
+    background: var(--surface2);
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 0.65rem;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+  }
+  .info-chip strong { color: var(--text); }
+
+  #back-btn {
+    background: transparent;
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+  }
+  #back-btn:hover { border-color: var(--p2); color: var(--p2); }
+
+  /* ============ BOARD ============ */
+  #board-container {
+    width: min(85vw, 65vh);
+    height: min(85vw, 65vh);
+    max-width: 560px;
+    max-height: 560px;
+    position: relative;
+  }
+
+  #board {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(var(--grid-size), 1fr);
+    grid-template-rows: repeat(var(--grid-size), 1fr);
+    gap: var(--card-gap);
+    padding: 4px;
+  }
+
+  /* ============ CARD ============ */
+  .card {
+    perspective: 1000px;
+    cursor: pointer;
+    position: relative;
+  }
+  .card.locked { pointer-events: none; }
+  .card.matched { pointer-events: none; }
+
+  .card-inner {
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    border-radius: 8px;
+  }
+  .card.flipped .card-inner { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .card-back {
+    background: var(--card-back);
+    border: 1px solid var(--card-border);
+    transition: border-color 0.2s;
+  }
+  .card:hover:not(.flipped):not(.locked) .card-back {
+    border-color: rgba(0,245,255,0.4);
+    box-shadow: 0 0 10px rgba(0,245,255,0.1);
+  }
+
+  .card-back::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(135deg, rgba(0,245,255,0.03) 0%, transparent 50%),
+      repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(0,245,255,0.02) 8px, rgba(0,245,255,0.02) 9px);
+  }
+
+  .card-back-icon {
+    font-size: clamp(0.7rem, 2vw, 1.2rem);
+    color: rgba(0,245,255,0.15);
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    letter-spacing: -0.05em;
+    user-select: none;
+  }
+
+  .card-front {
+    transform: rotateY(180deg);
+    background: #0a1525;
+    border: 1px solid rgba(0,245,255,0.2);
+    flex-direction: column;
+    gap: 2px;
+  }
+  .card-symbol {
+    font-size: clamp(0.9rem, 2.5vw, 1.8rem);
+    line-height: 1;
+    user-select: none;
+  }
+  .card-id {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(0.35rem, 0.8vw, 0.55rem);
+    color: rgba(0,245,255,0.4);
+    letter-spacing: 0.1em;
+  }
+
+  /* matched card states */
+  .card.matched-p1 .card-front {
+    border-color: var(--p1);
+    background: rgba(0,245,255,0.08);
+    box-shadow: 0 0 12px rgba(0,245,255,0.3), inset 0 0 12px rgba(0,245,255,0.05);
+  }
+  .card.matched-p1 .card-id { color: var(--p1); }
+  .card.matched-p2 .card-front {
+    border-color: var(--p2);
+    background: rgba(255,45,120,0.08);
+    box-shadow: 0 0 12px rgba(255,45,120,0.3), inset 0 0 12px rgba(255,45,120,0.05);
+  }
+  .card.matched-p2 .card-id { color: var(--p2); }
+
+  /* selected highlight */
+  .card.selected .card-front {
+    border-color: var(--gold);
+    box-shadow: 0 0 14px rgba(255,215,0,0.35);
+  }
+
+  /* ============ VICTORY OVERLAY ============ */
+  #victory-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(8,11,20,0.92);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+  }
+  #victory-overlay.active { display: flex; }
+
+  #victory-canvas {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .victory-box {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 40px 50px;
+    background: var(--surface);
+    border-radius: 20px;
+    border: 1px solid rgba(255,215,0,0.3);
+    box-shadow: 0 0 60px rgba(255,215,0,0.12);
+    max-width: 380px;
+    width: 90vw;
+  }
+
+  .victory-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(1.2rem, 5vw, 2rem);
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    text-shadow: 0 0 30px rgba(255,215,0,0.6);
+    margin-bottom: 6px;
+  }
+  .victory-winner {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(0.7rem, 2.5vw, 1rem);
+    letter-spacing: 0.15em;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+  .victory-scores {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+  .vscore-card {
+    padding: 12px 20px;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid;
+  }
+  .vscore-card.p1s { border-color: var(--p1); background: var(--p1-dim); }
+  .vscore-card.p2s { border-color: var(--p2); background: var(--p2-dim); }
+  .vscore-label { font-size: 0.65rem; letter-spacing: 0.1em; color: var(--text-dim); font-family: 'Orbitron', sans-serif; }
+  .vscore-num { font-family: 'Orbitron', sans-serif; font-size: 2rem; font-weight: 900; }
+  .p1s .vscore-num { color: var(--p1); text-shadow: 0 0 15px var(--p1); }
+  .p2s .vscore-num { color: var(--p2); text-shadow: 0 0 15px var(--p2); }
+
+  .victory-btns { display: flex; gap: 10px; }
+  .v-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .v-btn-primary {
+    background: linear-gradient(135deg, rgba(0,245,255,0.2), rgba(0,245,255,0.05));
+    border: 1px solid var(--p1);
+    color: var(--p1);
+  }
+  .v-btn-primary:hover { box-shadow: 0 0 20px rgba(0,245,255,0.3); }
+  .v-btn-secondary {
+    background: transparent;
+    border: 1px solid var(--card-border);
+    color: var(--text-dim);
+  }
+  .v-btn-secondary:hover { border-color: var(--text-dim); color: var(--text); }
+
+  /* ============ STATUS BAR ============ */
+  #status-bar {
+    width: min(85vw, 65vh);
+    max-width: 560px;
+    margin-top: 8px;
+    text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    color: var(--text-dim);
+    min-height: 18px;
+    transition: color 0.3s;
+  }
+
+  /* ============ AI THINKING ============ */
+  .ai-thinking {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--p2);
+  }
+  .ai-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--p2);
+    animation: aidot 1.2s ease-in-out infinite;
+  }
+  .ai-dot:nth-child(2) { animation-delay: 0.2s; }
+  .ai-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes aidot { 0%,80%,100%{transform:scale(0.5);opacity:0.3} 40%{transform:scale(1);opacity:1} }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>FLUX PAIRS: <span>MEMORY MATRIX</span></h1>
+  <p>Neural Pattern Acquisition System v2.0</p>
+</div>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen">
+
+  <div class="setup-section">
+    <div class="setup-label">Game Mode</div>
+    <div class="pill-group" id="mode-group">
+      <div class="pill active-p1" data-val="vs-ai">⚡ VS Computer</div>
+      <div class="pill" data-val="2p">👥 2 Player Local</div>
+    </div>
+  </div>
+
+  <div class="setup-section">
+    <div class="setup-label">Difficulty / AI Level</div>
+    <div class="pill-group" id="diff-group">
+      <div class="pill" data-val="easy">🟢 Easy</div>
+      <div class="pill active-p1" data-val="medium">🟡 Medium</div>
+      <div class="pill" data-val="hard">🟠 Hard</div>
+      <div class="pill" data-val="superhard">🔴 Super Hard</div>
+    </div>
+  </div>
+
+  <div class="setup-section">
+    <div class="setup-label">Match Target (M)</div>
+    <div class="pill-group" id="match-group">
+      <div class="pill active-p1" data-val="2">Match 2</div>
+      <div class="pill" data-val="3">Match 3</div>
+      <div class="pill" data-val="4">Match 4</div>
+    </div>
+  </div>
+
+  <div class="grid-preview" id="grid-preview">
+    Board Preview: <strong id="grid-preview-text">6×6 Grid · 36 Tiles · 18 Pairs</strong>
+  </div>
+
+  <div class="setup-section" style="margin-bottom:0; margin-top:16px;">
+    <button id="start-btn">◈ INITIALIZE MATRIX ◈</button>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen">
+  <div class="scoreboard">
+    <div class="player-card p1-card active-turn" id="p1-card">
+      <div class="player-avatar">🔵</div>
+      <div class="player-info">
+        <div class="player-name" id="p1-name">PLAYER 1</div>
+        <div class="player-score" id="p1-score">0</div>
+        <div class="player-sub" id="p1-sub">MATCHES</div>
+      </div>
+      <div class="turn-indicator"></div>
+    </div>
+    <div class="player-card p2-card" id="p2-card">
+      <div class="player-avatar">🔴</div>
+      <div class="player-info">
+        <div class="player-name" id="p2-name">PLAYER 2</div>
+        <div class="player-score" id="p2-score">0</div>
+        <div class="player-sub" id="p2-sub">MATCHES</div>
+      </div>
+      <div class="turn-indicator"></div>
+    </div>
+  </div>
+
+  <div class="game-info-bar">
+    <div class="info-chip">Grid: <strong id="info-grid">6×6</strong></div>
+    <div class="info-chip">Match: <strong id="info-match">M2</strong></div>
+    <div class="info-chip">Tiles Left: <strong id="info-tiles">36</strong></div>
+    <button id="back-btn">◁ MENU</button>
+  </div>
+
+  <div id="board-container">
+    <div id="board"></div>
+  </div>
+
+  <div id="status-bar"></div>
+</div>
+
+<!-- VICTORY OVERLAY -->
+<div id="victory-overlay">
+  <canvas id="victory-canvas"></canvas>
+  <div class="victory-box">
+    <div class="victory-title" id="v-title">MATRIX CLEARED</div>
+    <div class="victory-winner" id="v-winner">PLAYER 1 ACHIEVES DOMINANCE</div>
+    <div class="victory-scores">
+      <div class="vscore-card p1s">
+        <div class="vscore-label" id="v-p1-label">P1</div>
+        <div class="vscore-num" id="v-p1-score">0</div>
+      </div>
+      <div class="vscore-card p2s">
+        <div class="vscore-label" id="v-p2-label">P2</div>
+        <div class="vscore-num" id="v-p2-score">0</div>
+      </div>
+    </div>
+    <div class="victory-btns">
+      <button class="v-btn v-btn-primary" id="v-replay">↺ REPLAY</button>
+      <button class="v-btn v-btn-secondary" id="v-menu">⌂ MENU</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  /* =========================================================
+     AUDIO ENGINE
+  ========================================================= */
+  const Audio = (() => {
+    let ctx = null;
+    function getCtx() {
+      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      return ctx;
+    }
+    function playFlip() {
+      try {
+        const c = getCtx();
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        osc.connect(gain); gain.connect(c.destination);
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(800, c.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(400, c.currentTime + 0.06);
+        gain.gain.setValueAtTime(0.08, c.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.08);
+        osc.start(c.currentTime); osc.stop(c.currentTime + 0.08);
+      } catch(e) {}
+    }
+    function playMatch() {
+      try {
+        const c = getCtx();
+        [[523, 0], [659, 0.12], [784, 0.22]].forEach(([freq, delay]) => {
+          const osc = c.createOscillator();
+          const gain = c.createGain();
+          osc.connect(gain); gain.connect(c.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, c.currentTime + delay);
+          gain.gain.setValueAtTime(0, c.currentTime + delay);
+          gain.gain.linearRampToValueAtTime(0.12, c.currentTime + delay + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + delay + 0.28);
+          osc.start(c.currentTime + delay);
+          osc.stop(c.currentTime + delay + 0.3);
+        });
+      } catch(e) {}
+    }
+    function playMismatch() {
+      try {
+        const c = getCtx();
+        const osc = c.createOscillator();
+        const filter = c.createBiquadFilter();
+        const gain = c.createGain();
+        osc.connect(filter); filter.connect(gain); gain.connect(c.destination);
+        osc.type = 'sawtooth';
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(400, c.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(80, c.currentTime + 0.4);
+        osc.frequency.setValueAtTime(120, c.currentTime);
+        osc.frequency.linearRampToValueAtTime(60, c.currentTime + 0.4);
+        gain.gain.setValueAtTime(0.12, c.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.4);
+        osc.start(c.currentTime); osc.stop(c.currentTime + 0.4);
+      } catch(e) {}
+    }
+    function playVictory() {
+      try {
+        const c = getCtx();
+        const melody = [523,659,784,1047,784,1047,1319];
+        melody.forEach((freq, i) => {
+          const osc = c.createOscillator();
+          const gain = c.createGain();
+          osc.connect(gain); gain.connect(c.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, c.currentTime + i * 0.13);
+          gain.gain.setValueAtTime(0, c.currentTime + i * 0.13);
+          gain.gain.linearRampToValueAtTime(0.1, c.currentTime + i * 0.13 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + i * 0.13 + 0.25);
+          osc.start(c.currentTime + i * 0.13);
+          osc.stop(c.currentTime + i * 0.13 + 0.28);
+        });
+      } catch(e) {}
+    }
+    return { playFlip, playMatch, playMismatch, playVictory };
+  })();
+
+  /* =========================================================
+     GRID CONFIG LOOKUP
+  ========================================================= */
+  const GRID_CONFIG = {
+    easy:      { 2: { n:4,  total:16, sets:8  }, 3: { n:9, total:81, sets:27 }, 4: { n:4,  total:16, sets:4  } },
+    medium:    { 2: { n:6,  total:36, sets:18 }, 3: { n:9, total:81, sets:27 }, 4: { n:8,  total:64, sets:16 } },
+    hard:      { 2: { n:8,  total:64, sets:32 }, 3: { n:9, total:81, sets:27 }, 4: { n:8,  total:64, sets:16 } },
+    superhard: { 2: { n:10, total:100,sets:50 }, 3: { n:9, total:81, sets:27 }, 4: { n:10, total:100,sets:25 } }
+  };
+
+  const AI_MEMORY = { easy: 3, medium: 12, hard: 25, superhard: Infinity };
+
+  const SYMBOLS = [
+    '◆','★','▲','◉','⬟','⬡','⬠','◈','⊕','⊗','⋈','⊞',
+    '⌬','⏣','⌘','⎔','◭','◫','⊡','⊟','◰','◱','◲','◳',
+    '⊛','⊜'
+  ];
+
+  /* =========================================================
+     SETUP PANEL LOGIC
+  ========================================================= */
+  let setupState = { mode: 'vs-ai', diff: 'medium', match: 2 };
+
+  function makePillGroup(groupId, key) {
+    document.getElementById(groupId).addEventListener('click', e => {
+      const pill = e.target.closest('.pill');
+      if (!pill) return;
+      document.querySelectorAll(`#${groupId} .pill`).forEach(p => p.classList.remove('active-p1','active-p2'));
+      pill.classList.add('active-p1');
+      setupState[key] = isNaN(pill.dataset.val) ? pill.dataset.val : Number(pill.dataset.val);
+      updateGridPreview();
+    });
+  }
+  makePillGroup('mode-group', 'mode');
+  makePillGroup('diff-group', 'diff');
+  makePillGroup('match-group', 'match');
+
+  function updateGridPreview() {
+    const effDiff = setupState.mode === '2p' ? 'medium' : setupState.diff;
+    const cfg = GRID_CONFIG[effDiff][setupState.match];
+    const matchWord = setupState.match === 2 ? 'Pairs' : setupState.match === 3 ? 'Triplets' : 'Quads';
+    document.getElementById('grid-preview-text').textContent =
+      `${cfg.n}×${cfg.n} Grid · ${cfg.total} Tiles · ${cfg.sets} ${matchWord}`;
+  }
+  updateGridPreview();
+
+  /* =========================================================
+     GAME STATE
+  ========================================================= */
+  let G = {};
+
+  function initGame() {
+    const mode = setupState.mode;
+    const match = setupState.match;
+    const diff  = mode === '2p' ? 'medium' : setupState.diff;
+    const cfg   = GRID_CONFIG[diff][match];
+
+    G = {
+      mode, match, diff,
+      n: cfg.n,
+      totalTiles: cfg.total,
+      totalSets: cfg.sets,
+      scores: [0, 0],
+      currentPlayer: 0,   // 0 = P1, 1 = P2/AI
+      selected: [],        // indices of currently selected (flipped) cards
+      matched: new Set(),  // indices of permanently matched cards
+      locked: false,
+      cards: [],           // { id, symbol, el, faceEl }
+      aiMemory: {},        // index -> symbol  (AI's memory bank)
+      matchesLeft: cfg.sets,
+      aiThinking: false
+    };
+
+    buildBoard();
+    updateScoreboard();
+    setStatus('');
+    document.getElementById('info-grid').textContent = `${cfg.n}×${cfg.n}`;
+    document.getElementById('info-match').textContent = `M${match}`;
+    document.getElementById('info-tiles').textContent = cfg.total;
+
+    // Player labels
+    document.getElementById('p1-name').textContent = 'PLAYER 1';
+    document.getElementById('p2-name').textContent = mode === 'vs-ai' ? `AI · ${diff.toUpperCase()}` : 'PLAYER 2';
+
+    document.getElementById('setup-screen').style.display = 'none';
+    document.getElementById('game-screen').classList.add('active');
+  }
+
+  /* =========================================================
+     BOARD BUILDER
+  ========================================================= */
+  function buildBoard() {
+    const board = document.getElementById('board');
+    board.innerHTML = '';
+    board.style.setProperty('--grid-size', G.n);
+
+    // Create deck
+    const symbolSet = [...SYMBOLS];
+    let deck = [];
+    for (let s = 0; s < G.totalSets; s++) {
+      const sym = symbolSet[s % symbolSet.length];
+      for (let m = 0; m < G.match; m++) deck.push({ groupId: s, symbol: sym });
+    }
+    // Shuffle
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+
+    G.cards = [];
+    deck.forEach((d, idx) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.dataset.idx = idx;
+
+      const inner = document.createElement('div');
+      inner.className = 'card-inner';
+
+      const back = document.createElement('div');
+      back.className = 'card-face card-back';
+      back.innerHTML = `<div class="card-back-icon">◈</div>`;
+
+      const front = document.createElement('div');
+      front.className = 'card-face card-front';
+      front.innerHTML = `<div class="card-symbol">${d.symbol}</div><div class="card-id">#${String(idx).padStart(3,'0')}</div>`;
+
+      inner.appendChild(back);
+      inner.appendChild(front);
+      card.appendChild(inner);
+      board.appendChild(card);
+
+      card.addEventListener('click', () => onCardClick(idx));
+
+      G.cards.push({ groupId: d.groupId, symbol: d.symbol, el: card, faceEl: front });
+    });
+  }
+
+  /* =========================================================
+     CARD CLICK HANDLER
+  ========================================================= */
+  function onCardClick(idx) {
+    if (G.locked) return;
+    if (G.matched.has(idx)) return;
+    if (G.selected.includes(idx)) return;
+    if (G.currentPlayer === 1 && G.mode === 'vs-ai') return; // AI turn
+
+    flipCard(idx);
+  }
+
+  function flipCard(idx) {
+    Audio.playFlip();
+    G.cards[idx].el.classList.add('flipped', 'selected');
+    G.selected.push(idx);
+
+    // AI memory update — AI learns what P1 reveals
+    if (G.mode === 'vs-ai') {
+      const memSize = Object.keys(G.aiMemory).length;
+      const cap = AI_MEMORY[G.diff];
+      if (cap === Infinity || memSize < cap) {
+        G.aiMemory[idx] = G.cards[idx].groupId;
+      }
+    }
+
+    if (G.selected.length === G.match) {
+      G.locked = true;
+      setTimeout(evaluateSelection, 350);
+    }
+  }
+
+  /* =========================================================
+     EVALUATION
+  ========================================================= */
+  function evaluateSelection() {
+    const sel = G.selected;
+    const firstGroup = G.cards[sel[0]].groupId;
+    const isMatch = sel.every(idx => G.cards[idx].groupId === firstGroup);
+
+    if (isMatch) {
+      Audio.playMatch();
+      const playerClass = G.currentPlayer === 0 ? 'matched-p1' : 'matched-p2';
+      sel.forEach(idx => {
+        G.cards[idx].el.classList.remove('selected');
+        G.cards[idx].el.classList.add('matched', playerClass);
+        G.matched.add(idx);
+        // AI memory — remove matched cards
+        delete G.aiMemory[idx];
+      });
+      G.scores[G.currentPlayer]++;
+      G.matchesLeft--;
+      G.selected = [];
+      G.locked = false;
+      updateScoreboard();
+      updateTilesLeft();
+
+      if (G.matchesLeft === 0) {
+        setTimeout(showVictory, 400);
+        return;
+      }
+      setStatus(G.currentPlayer === 0 ? '✦ MATCH! Keep your turn ✦' : '✦ AI MATCH! It continues ✦');
+
+      if (G.currentPlayer === 1 && G.mode === 'vs-ai') {
+        setTimeout(doAITurn, 700);
+      }
+    } else {
+      Audio.playMismatch();
+      setStatus('✕ No match — switching turns');
+
+      // AI memory update for current revealed cards
+      if (G.mode === 'vs-ai') {
+        sel.forEach(idx => {
+          const cap = AI_MEMORY[G.diff];
+          const memSize = Object.keys(G.aiMemory).length;
+          if (cap === Infinity || memSize < cap) {
+            G.aiMemory[idx] = G.cards[idx].groupId;
+          }
+        });
+      }
+
+      setTimeout(() => {
+        sel.forEach(idx => {
+          G.cards[idx].el.classList.remove('flipped', 'selected');
+        });
+        G.selected = [];
+        G.currentPlayer = 1 - G.currentPlayer;
+        G.locked = false;
+        updateScoreboard();
+        if (G.currentPlayer === 1 && G.mode === 'vs-ai') {
+          setTimeout(doAITurn, 500);
+        }
+      }, 1200);
+    }
+  }
+
+  /* =========================================================
+     AI ENGINE
+  ========================================================= */
+  function doAITurn() {
+    if (G.matchesLeft === 0) return;
+    setStatus('<span class="ai-thinking">AI SCANNING<div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div></span>');
+    G.locked = true;
+    G.aiThinking = true;
+
+    const picks = computeAIPicks();
+
+    let delay = 600;
+    picks.forEach((idx, i) => {
+      setTimeout(() => {
+        if (G.matched.has(idx)) return;
+        // Update memory for what AI reveals (AI always knows what it picks)
+        G.aiMemory[idx] = G.cards[idx].groupId;
+        flipCard(idx);
+        if (i === picks.length - 1) {
+          G.aiThinking = false;
+          G.locked = true; // keep locked until evaluation
+        }
+      }, delay + i * 550);
+    });
+  }
+
+  function computeAIPicks() {
+    const unmatched = G.cards.map((c, i) => i).filter(i => !G.matched.has(i));
+    const M = G.match;
+    const diff = G.diff;
+    const mem = G.aiMemory;
+
+    // Group memory by groupId
+    const knownGroups = {};
+    Object.entries(mem).forEach(([idxStr, gid]) => {
+      const idx = Number(idxStr);
+      if (G.matched.has(idx)) return;
+      if (!knownGroups[gid]) knownGroups[gid] = [];
+      knownGroups[gid].push(idx);
+    });
+
+    // Find groups where we know exactly M cards
+    const completeGroup = Object.entries(knownGroups).find(([, idxs]) => idxs.length >= M);
+    if (completeGroup) return completeGroup[1].slice(0, M);
+
+    // Hard/SuperHard: try partial match — know M-1, guess the last
+    if ((diff === 'hard' || diff === 'superhard')) {
+      const partialGroup = Object.entries(knownGroups).find(([, idxs]) => idxs.length === M - 1);
+      if (partialGroup) {
+        const known = partialGroup[1];
+        const gid = Number(partialGroup[0]);
+        // Find unknown cards to guess
+        const unknown = unmatched.filter(i => !known.includes(i) && !(i in mem));
+        if (unknown.length === 0) {
+          // All remaining must be the match
+          const remaining = unmatched.filter(i => !known.includes(i));
+          if (remaining.length > 0) return [...known, remaining[0]];
+        }
+        // Pick probabilistically: prefer cards not yet seen
+        const pick = unknown[Math.floor(Math.random() * unknown.length)];
+        return [...known, pick];
+      }
+    }
+
+    // Random picks (weighted toward memory for medium+)
+    const picks = [];
+    const unmatchedUnknown = unmatched.filter(i => !(i in mem));
+
+    // Pick first randomly from unknown
+    const firstPool = unmatchedUnknown.length > 0 ? unmatchedUnknown : unmatched;
+    const first = firstPool[Math.floor(Math.random() * firstPool.length)];
+    picks.push(first);
+    G.aiMemory[first] = G.cards[first].groupId; // AI will learn this
+
+    // For remaining picks, check if we know any matching cards
+    for (let p = 1; p < M; p++) {
+      const currentGid = G.cards[picks[0]].groupId;
+      const matchInMemory = Object.entries(mem).find(([idxStr, gid]) => {
+        const idx = Number(idxStr);
+        return gid === currentGid && !picks.includes(idx) && !G.matched.has(idx);
+      });
+
+      if (matchInMemory && (diff === 'medium' || diff === 'hard' || diff === 'superhard')) {
+        picks.push(Number(matchInMemory[0]));
+      } else {
+        const pool = unmatched.filter(i => !picks.includes(i));
+        if (pool.length > 0) picks.push(pool[Math.floor(Math.random() * pool.length)]);
+      }
+    }
+
+    return picks;
+  }
+
+  /* =========================================================
+     UI UPDATES
+  ========================================================= */
+  function updateScoreboard() {
+    document.getElementById('p1-score').textContent = G.scores[0];
+    document.getElementById('p2-score').textContent = G.scores[1];
+
+    const p1card = document.getElementById('p1-card');
+    const p2card = document.getElementById('p2-card');
+    if (G.currentPlayer === 0) {
+      p1card.classList.add('active-turn');
+      p2card.classList.remove('active-turn');
+    } else {
+      p2card.classList.add('active-turn');
+      p1card.classList.remove('active-turn');
+    }
+  }
+
+  function updateTilesLeft() {
+    document.getElementById('info-tiles').textContent = G.totalTiles - G.matched.size;
+  }
+
+  function setStatus(html) {
+    document.getElementById('status-bar').innerHTML = html;
+  }
+
+  /* =========================================================
+     VICTORY
+  ========================================================= */
+  function showVictory() {
+    Audio.playVictory();
+    const [s1, s2] = G.scores;
+    let title, winner;
+    if (s1 > s2) {
+      title = 'MATRIX CLEARED';
+      winner = G.mode === 'vs-ai' ? 'PLAYER 1 DEFEATS THE AI!' : 'PLAYER 1 ACHIEVES DOMINANCE!';
+    } else if (s2 > s1) {
+      title = 'MATRIX CLEARED';
+      winner = G.mode === 'vs-ai' ? 'AI DOMINATES THE MATRIX!' : 'PLAYER 2 ACHIEVES DOMINANCE!';
+    } else {
+      title = 'MATRIX BALANCED';
+      winner = 'PERFECT EQUILIBRIUM — TIE!';
+    }
+
+    document.getElementById('v-title').textContent = title;
+    document.getElementById('v-winner').textContent = winner;
+    document.getElementById('v-p1-score').textContent = s1;
+    document.getElementById('v-p2-score').textContent = s2;
+    document.getElementById('v-p1-label').textContent = 'PLAYER 1';
+    document.getElementById('v-p2-label').textContent = G.mode === 'vs-ai' ? 'AI' : 'PLAYER 2';
+
+    document.getElementById('victory-overlay').classList.add('active');
+    startConfetti();
+  }
+
+  /* =========================================================
+     CONFETTI
+  ========================================================= */
+  let confettiAnim = null;
+  function startConfetti() {
+    const canvas = document.getElementById('victory-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const colors = ['#00f5ff','#ff2d78','#ffd700','#7fff00','#ff6600','#ff00ff'];
+    const particles = Array.from({ length: 120 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height - canvas.height,
+      vx: (Math.random() - 0.5) * 3,
+      vy: Math.random() * 3 + 1.5,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      size: Math.random() * 8 + 4,
+      rot: Math.random() * Math.PI * 2,
+      rotV: (Math.random() - 0.5) * 0.15,
+      shape: Math.random() > 0.5 ? 'rect' : 'circle'
+    }));
+
+    function frame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        p.rot += p.rotV;
+        if (p.y > canvas.height) { p.y = -20; p.x = Math.random() * canvas.width; }
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.globalAlpha = 0.85;
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 8;
+        if (p.shape === 'rect') {
+          ctx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2);
+        } else {
+          ctx.beginPath();
+          ctx.arc(0, 0, p.size/2, 0, Math.PI*2);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+      confettiAnim = requestAnimationFrame(frame);
+    }
+    frame();
+  }
+
+  function stopConfetti() {
+    if (confettiAnim) { cancelAnimationFrame(confettiAnim); confettiAnim = null; }
+    const canvas = document.getElementById('victory-canvas');
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  /* =========================================================
+     NAVIGATION
+  ========================================================= */
+  document.getElementById('start-btn').addEventListener('click', initGame);
+
+  document.getElementById('back-btn').addEventListener('click', () => {
+    stopConfetti();
+    document.getElementById('victory-overlay').classList.remove('active');
+    document.getElementById('game-screen').classList.remove('active');
+    document.getElementById('setup-screen').style.display = 'block';
+    updateGridPreview();
+  });
+
+  document.getElementById('v-replay').addEventListener('click', () => {
+    stopConfetti();
+    document.getElementById('victory-overlay').classList.remove('active');
+    initGame();
+  });
+
+  document.getElementById('v-menu').addEventListener('click', () => {
+    stopConfetti();
+    document.getElementById('victory-overlay').classList.remove('active');
+    document.getElementById('game-screen').classList.remove('active');
+    document.getElementById('setup-screen').style.display = 'block';
+    updateGridPreview();
+  });
+
+  // Also resume audio context on first interaction
+  document.addEventListener('click', () => {}, { once: true });
+
+})();
+</script>
+</body>
+</html>
