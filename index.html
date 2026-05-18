@@ -416,26 +416,17 @@
     line-height: 1;
     user-select: none;
   }
-  .card-id {
-    font-family: 'Orbitron', sans-serif;
-    font-size: clamp(0.35rem, 0.8vw, 0.55rem);
-    color: rgba(0,245,255,0.4);
-    letter-spacing: 0.1em;
-  }
-
   /* matched card states */
   .card.matched-p1 .card-front {
     border-color: var(--p1);
     background: rgba(0,245,255,0.08);
     box-shadow: 0 0 12px rgba(0,245,255,0.3), inset 0 0 12px rgba(0,245,255,0.05);
   }
-  .card.matched-p1 .card-id { color: var(--p1); }
   .card.matched-p2 .card-front {
     border-color: var(--p2);
     background: rgba(255,45,120,0.08);
     box-shadow: 0 0 12px rgba(255,45,120,0.3), inset 0 0 12px rgba(255,45,120,0.05);
   }
-  .card.matched-p2 .card-id { color: var(--p2); }
 
   /* selected highlight */
   .card.selected .card-front {
@@ -1101,7 +1092,7 @@
 
       const front = document.createElement('div');
       front.className = 'card-face card-front';
-      front.innerHTML = `<div class="card-symbol">${d.emoji}</div><div class="card-id">#${String(idx).padStart(3,'0')}</div>`;
+      front.innerHTML = `<div class="card-symbol">${d.emoji}</div>`;
 
       inner.appendChild(back);
       inner.appendChild(front);
