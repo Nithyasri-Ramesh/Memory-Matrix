@@ -567,6 +567,97 @@
   .ai-dot:nth-child(3) { animation-delay: 0.4s; }
   @keyframes aidot { 0%,80%,100%{transform:scale(0.5);opacity:0.3} 40%{transform:scale(1);opacity:1} }
 
+  /* ============ THEME SELECTOR ============ */
+  .theme-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .theme-pill {
+    padding: 10px 8px 8px;
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    background: var(--card-back);
+    color: var(--text-dim);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .theme-pill::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.25s;
+    background: radial-gradient(ellipse at top, rgba(0,245,255,0.08), transparent 70%);
+  }
+  .theme-pill:hover { border-color: rgba(0,245,255,0.35); color: var(--text); }
+  .theme-pill:hover::before { opacity: 1; }
+  .theme-pill.active-theme {
+    border-color: var(--p1);
+    background: var(--p1-dim);
+    color: var(--p1);
+    box-shadow: 0 0 14px rgba(0,245,255,0.22), inset 0 0 10px rgba(0,245,255,0.06);
+  }
+  .theme-pill.active-theme::before { opacity: 1; }
+  .theme-pill .theme-icon {
+    font-size: 1.55rem;
+    line-height: 1;
+    display: block;
+    filter: drop-shadow(0 0 4px rgba(0,245,255,0.0));
+    transition: filter 0.2s, transform 0.2s;
+  }
+  .theme-pill:hover .theme-icon,
+  .theme-pill.active-theme .theme-icon {
+    filter: drop-shadow(0 0 6px rgba(0,245,255,0.45));
+    transform: scale(1.1);
+  }
+  .theme-pill .theme-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  /* preview strip — shows 4 sample emojis from the chosen theme */
+  .theme-preview-strip {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 32px;
+  }
+  .preview-emoji {
+    font-size: 1.4rem;
+    line-height: 1;
+    animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.4) rotate(-10deg); }
+    to   { opacity: 1; transform: scale(1) rotate(0deg); }
+  }
+  .preview-emoji:nth-child(2) { animation-delay: 0.04s; }
+  .preview-emoji:nth-child(3) { animation-delay: 0.08s; }
+  .preview-emoji:nth-child(4) { animation-delay: 0.12s; }
+  .preview-emoji:nth-child(5) { animation-delay: 0.16s; }
+  .preview-more {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.55rem;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    padding-left: 2px;
+  }
+
   /* scrollbar */
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
@@ -608,6 +699,37 @@
       <div class="pill" data-val="3">Match 3</div>
       <div class="pill" data-val="4">Match 4</div>
     </div>
+  </div>
+
+  <div class="setup-section">
+    <div class="setup-label">Card Theme</div>
+    <div class="theme-grid" id="theme-group">
+      <div class="theme-pill active-theme" data-theme="animals">
+        <span class="theme-icon">🦁</span>
+        <span class="theme-label">Animals</span>
+      </div>
+      <div class="theme-pill" data-theme="shapes">
+        <span class="theme-icon">🔷</span>
+        <span class="theme-label">Shapes</span>
+      </div>
+      <div class="theme-pill" data-theme="colors">
+        <span class="theme-icon">💖</span>
+        <span class="theme-label">Colors</span>
+      </div>
+      <div class="theme-pill" data-theme="beach">
+        <span class="theme-icon">🏖️</span>
+        <span class="theme-label">Beach</span>
+      </div>
+      <div class="theme-pill" data-theme="birds">
+        <span class="theme-icon">🦜</span>
+        <span class="theme-label">Birds</span>
+      </div>
+      <div class="theme-pill" data-theme="vehicles">
+        <span class="theme-icon">🚗</span>
+        <span class="theme-label">Vehicles</span>
+      </div>
+    </div>
+    <div class="theme-preview-strip" id="theme-preview-strip"></div>
   </div>
 
   <div class="grid-preview" id="grid-preview">
@@ -682,6 +804,73 @@
 <script>
 (function() {
   'use strict';
+
+  /* =========================================================
+     THEME PRESET PACKS  — 50 emojis each, hand-curated for
+     high contrast and visual distinctiveness on small cards
+  ========================================================= */
+  const THEMES = {
+    animals: {
+      label: 'Animals', icon: '🦁',
+      emojis: [
+        '🦁','🐯','🦊','🐻','🐼','🐨','🦝','🦄','🐮','🐷',
+        '🐸','🐙','🦋','🦀','🐠','🦩','🐘','🦒','🦓','🦏',
+        '🐺','🦦','🦥','🐿️','🦔','🐇','🦌','🐓','🦃','🦢',
+        '🦚','🦜','🦤','🦭','🦈','🐊','🐢','🦎','🐍','🦕',
+        '🦖','🦑','🦞','🦐','🐡','🐬','🐳','🦋','🐛','🐝'
+      ]
+    },
+    shapes: {
+      label: 'Shapes', icon: '🔷',
+      emojis: [
+        '🔷','🔶','🔴','🟢','🟡','🟣','🟠','⚫','⚪','🟤',
+        '🔵','🔺','🔻','💠','🔘','🔲','🔳','▪️','▫️','◾',
+        '◽','◼️','◻️','🟥','🟧','🟨','🟩','🟦','🟪','⬛',
+        '⬜','🔹','🔸','💎','🔗','⭕','❌','✅','❎','🔰',
+        '♾️','🔄','🔃','⚙️','🔑','🗝️','🧩','🎯','🎱','🎰'
+      ]
+    },
+    colors: {
+      label: 'Colors', icon: '💖',
+      emojis: [
+        '❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💗',
+        '💖','💝','💘','💟','❣️','💔','🌹','🌷','🌸','🌺',
+        '🌻','🌼','🍀','🍁','🍂','🍃','🌿','🌾','🌵','🎋',
+        '🎍','🪴','🌱','🌲','🌳','🌴','🍄','🪷','🫧','🪸',
+        '🎆','🎇','✨','🌟','⭐','💫','🌈','☀️','🌙','⚡'
+      ]
+    },
+    beach: {
+      label: 'Beach', icon: '🏖️',
+      emojis: [
+        '🏖️','🌊','🐚','🦀','🐠','🦞','🦑','🐙','🦈','🐳',
+        '🐬','🌴','🏄','🤿','⛵','🚤','⚓','🐡','🦭','🦩',
+        '🌅','☀️','🕶️','👙','🩴','🏝️','🌺','🍹','🥥','🍦',
+        '🪸','🐢','🦋','🌻','🎣','🚣','🪁','🏊','🎿','🪂',
+        '🎠','🎡','🌠','🌌','🌃','🌉','🗺️','🧭','🔭','🪼'
+      ]
+    },
+    birds: {
+      label: 'Birds', icon: '🦜',
+      emojis: [
+        '🦜','🦚','🦩','🦢','🦤','🦅','🦆','🦉','🦋','🐦',
+        '🐧','🐓','🦃','🕊️','🪅','🐦‍⬛','🦇','🦗','🪲','🐞',
+        '🦟','🦠','🐝','🐛','🦂','🕷️','🪳','🦎','🐍','🐊',
+        '🦕','🦖','🐉','🐲','🦋','🦗','🌺','🌸','🌹','🌷',
+        '🪷','🌻','🌼','🌾','🍃','🌿','🌵','🌴','🎋','🪴'
+      ]
+    },
+    vehicles: {
+      label: 'Vehicles', icon: '🚗',
+      emojis: [
+        '🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐',
+        '🛻','🚚','🚛','🚜','🏍️','🛵','🛺','🚲','🛴','🛹',
+        '🛼','🚁','✈️','🛫','🛬','🛩️','🚀','🛸','🚂','🚃',
+        '🚄','🚅','🚆','🚇','🚈','🚉','🚊','🚝','🚞','🚋',
+        '⛵','🚤','🛥️','🛳️','⛴️','🚢','🛟','⚓','🏗️','🚡'
+      ]
+    }
+  };
 
   /* =========================================================
      AUDIO ENGINE
@@ -774,16 +963,10 @@
 
   const AI_MEMORY = { easy: 3, medium: 12, hard: 25, superhard: Infinity };
 
-  const SYMBOLS = [
-    '◆','★','▲','◉','⬟','⬡','⬠','◈','⊕','⊗','⋈','⊞',
-    '⌬','⏣','⌘','⎔','◭','◫','⊡','⊟','◰','◱','◲','◳',
-    '⊛','⊜'
-  ];
-
   /* =========================================================
      SETUP PANEL LOGIC
   ========================================================= */
-  let setupState = { mode: 'vs-ai', diff: 'medium', match: 2 };
+  let setupState = { mode: 'vs-ai', diff: 'medium', match: 2, theme: 'animals' };
 
   function makePillGroup(groupId, key) {
     document.getElementById(groupId).addEventListener('click', e => {
@@ -799,6 +982,26 @@
   makePillGroup('diff-group', 'diff');
   makePillGroup('match-group', 'match');
 
+  /* ---- Theme Pill Wiring ---- */
+  document.getElementById('theme-group').addEventListener('click', e => {
+    const pill = e.target.closest('.theme-pill');
+    if (!pill) return;
+    document.querySelectorAll('#theme-group .theme-pill').forEach(p => p.classList.remove('active-theme'));
+    pill.classList.add('active-theme');
+    setupState.theme = pill.dataset.theme;
+    renderThemePreview(setupState.theme);
+  });
+
+  function renderThemePreview(themeKey) {
+    const strip = document.getElementById('theme-preview-strip');
+    const emojis = THEMES[themeKey].emojis;
+    // Pick 5 representative samples from across the array
+    const picks = [0, 10, 20, 30, 40].map(i => emojis[i]);
+    strip.innerHTML =
+      picks.map((e, i) => `<span class="preview-emoji" style="animation-delay:${i*0.06}s">${e}</span>`).join('') +
+      `<span class="preview-more">+${emojis.length - 5} more</span>`;
+  }
+
   function updateGridPreview() {
     const effDiff = setupState.mode === '2p' ? 'medium' : setupState.diff;
     const cfg = GRID_CONFIG[effDiff][setupState.match];
@@ -807,6 +1010,7 @@
       `${cfg.n}×${cfg.n} Grid · ${cfg.total} Tiles · ${cfg.sets} ${matchWord}`;
   }
   updateGridPreview();
+  renderThemePreview('animals'); // initial preview
 
   /* =========================================================
      GAME STATE
@@ -821,6 +1025,7 @@
 
     G = {
       mode, match, diff,
+      theme: setupState.theme,
       n: cfg.n,
       totalTiles: cfg.total,
       totalSets: cfg.sets,
@@ -858,19 +1063,29 @@
     board.innerHTML = '';
     board.style.setProperty('--grid-size', G.n);
 
-    // Create deck
-    const symbolSet = [...SYMBOLS];
+    // ---- Theme-based deck construction ----
+    // 1. Pull the chosen theme's emoji array
+    const themeEmojis = THEMES[G.theme].emojis;
+
+    // 2. Slice exactly the number of unique sets needed
+    //    (GRID_CONFIG guarantees totalSets ≤ 50, all arrays have 50 entries)
+    const uniqueSet = themeEmojis.slice(0, G.totalSets);
+
+    // 3. Duplicate each emoji M times to satisfy the match target
     let deck = [];
-    for (let s = 0; s < G.totalSets; s++) {
-      const sym = symbolSet[s % symbolSet.length];
-      for (let m = 0; m < G.match; m++) deck.push({ groupId: s, symbol: sym });
-    }
-    // Shuffle
+    uniqueSet.forEach((emoji, groupId) => {
+      for (let m = 0; m < G.match; m++) {
+        deck.push({ groupId, emoji });
+      }
+    });
+
+    // 4. Fisher-Yates shuffle
     for (let i = deck.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [deck[i], deck[j]] = [deck[j], deck[i]];
     }
 
+    // 5. Render cards
     G.cards = [];
     deck.forEach((d, idx) => {
       const card = document.createElement('div');
@@ -886,7 +1101,7 @@
 
       const front = document.createElement('div');
       front.className = 'card-face card-front';
-      front.innerHTML = `<div class="card-symbol">${d.symbol}</div><div class="card-id">#${String(idx).padStart(3,'0')}</div>`;
+      front.innerHTML = `<div class="card-symbol">${d.emoji}</div><div class="card-id">#${String(idx).padStart(3,'0')}</div>`;
 
       inner.appendChild(back);
       inner.appendChild(front);
@@ -895,7 +1110,7 @@
 
       card.addEventListener('click', () => onCardClick(idx));
 
-      G.cards.push({ groupId: d.groupId, symbol: d.symbol, el: card, faceEl: front });
+      G.cards.push({ groupId: d.groupId, emoji: d.emoji, el: card, faceEl: front });
     });
   }
 
